@@ -1,13 +1,13 @@
 version: '3'
 services:
   api:
-    container_name: daily-scrum-api
+    container_name: app_name
     tty: true
     stdin_open: true
     command: /bin/bash
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./docker/app/Dockerfile
     environment:
       DATABASE_USER: root
       DATABASE_PASSWORD: password
@@ -30,5 +30,35 @@ services:
       - 3333:3306
     volumes:
       - ./docker/mysql/mysql-data:/var/lib/mysql
+  swagger-editor:
+    image: swaggerapi/swagger-editor
+    container_name: "swagger-editor"
+    ports:
+      - "8001:8080"
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    container_name: "swagger-ui"
+    ports:
+      - "8002:8080"
+    volumes:
+      - ./scrum-app-api.yaml:/scrum-app-api.yaml
+    environment:
+      SWAGGER_JSON: /scrum-app-api.yaml
+  # https://qiita.com/tippy/items/dda40e10b0a1d2ba0582
+  # モックサーバ
+  swagger-api:
+    container_name: swagger-api
+    build:
+      context: .
+      dockerfile: ./docker/web/Dockerfile
+  swagger-nginx:
+    container_name: swagger-nginx
+    image: openresty/openresty:alpine
+    ports:
+      - 8000:80
+    depends_on:
+      - swagger-api
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
 volumes:
   mysql-data:
